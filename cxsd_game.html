@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CXSD Onboarding Knowledge Navigator - Advanced Mission</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #e3f2fd 50%, #f1f8e9 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden; /* For animations */
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.6);
+        }
+        .option-button {
+            background-color: #f0f8ff;
+            color: #333;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid #e0f2fe;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .option-button:hover:not(.selected):not(.correct):not(.incorrect) {
+            background-color: #e6f7ff;
+            border-color: #90caf9;
+        }
+        .option-button.selected {
+            border-color: #007bff;
+            background-color: #e0f2fe;
+        }
+        .option-button.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            font-weight: 600;
+        }
+        .option-button.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            font-weight: 600;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            height: 15px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            transition: width 0.5s ease-in-out;
+        }
+        .level-indicator {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            background-color: #81d4fa;
+            color: #01579b;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .score-display {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background-color: #a5d6a7;
+            color: #1b5e20;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .modal-close-btn:hover {
+            color: #666;
+        }
+        .fade-out {
+            animation: fadeOut 0.5s forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div id="game-container" class="game-container">
+        <!-- Level and Score Indicators -->
+        <div id="level-indicator" class="level-indicator">Level 1</div>
+        <div id="score-display" class="score-display">Score: 0/100</div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="p-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-6">Welcome to the CXSD Knowledge Navigator!</h1>
+            <p class="text-lg text-gray-600 mb-8">Embark on your journey to become a certified CXSD team member. Answer questions, unlock levels, and prove your knowledge!</p>
+            <button id="start-button" class="btn-primary">Start Your Journey</button>
+        </div>
+
+        <!-- Question Screen -->
+        <div id="question-screen" class="hidden p-8 fade-in">
+            <p id="question-text" class="text-2xl font-semibold text-gray-800 mb-8"></p>
+            <div id="options-container" class="space-y-4 mb-8">
+                <!-- Options will be dynamically loaded here -->
+            </div>
+            <button id="next-button" class="btn-primary w-full sm:w-auto hidden">Next Question</button>
+            <div class="progress-bar-container mt-8">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden p-8 fade-in">
+            <h2 id="result-heading" class="text-3xl font-bold text-gray-800 mb-4"></h2>
+            <p id="final-score-text" class="text-xl text-gray-700 mb-6"></p>
+            <p id="pass-fail-message" class="text-lg font-medium mb-8"></p>
+            <button id="restart-button" class="btn-primary">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Explanation Modal -->
+    <div id="explanation-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+            <h3 id="modal-title" class="text-2xl font-bold text-red-600 mb-4">Incorrect Answer!</h3>
+            <p id="modal-explanation" class="text-gray-700 text-left mb-4"></p>
+            <button class="btn-primary px-6 py-3" onclick="closeModal()">Got It!</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                // Slide 6: Manual of Me
+                question: "What is the primary purpose of the 'Manual of Me'?",
+                options: [
+                    "To track personal vacation days.",
+                    "To manage project deadlines.",
+                    "To discover and share how to work brilliantly with you.",
+                    "To submit expense reports."
+                ],
+                correctAnswer: "To discover and share how to work brilliantly with you.",
+                explanation: "The 'Manual of Me' is a living document designed to help colleagues understand how to work effectively with each other."
+            },
+            {
+                // Slide 10: Roche Diagnostics Business Areas
+                question: "Which of the following is NOT listed as a Business Area for Roche Diagnostics?",
+                options: [
+                    "Diagnostics Solutions (RDS)",
+                    "Information Solutions (RIS)",
+                    "Manufacturing Solutions",
+                    "Foundation Medicine"
+                ],
+                correctAnswer: "Manufacturing Solutions",
+                explanation: "The listed Business Areas are Diagnostics Solutions (RDS), Information Solutions (RIS), and Foundation Medicine."
+            },
+            {
+                // Slide 11: CXSD Mission
+                question: "What is the core mission of Customer Experience & Solution Design (CXSD) at Roche Diagnostics?",
+                options: [
+                    "To manage product inventory and logistics.",
+                    "To drive customer experience at scale in Roche Diagnostics.",
+                    "To develop new diagnostic instruments.",
+                    "To handle internal IT support tickets."
+                ],
+                correctAnswer: "To drive customer experience at scale in Roche Diagnostics.",
+                explanation: "The CXSD mission is explicitly stated as 'We drive customer experience at scale in Roche Diagnostics by partnering with customer areas, global functions, and affiliates through enabling and designing end2end experiences across customers’ lifecycle with a focus on targeted users and their needs.'"
+            },
+            {
+                // Slide 12: CXSD Framework
+                question: "The CXSD Framework encompasses how many distinct spaces?",
+                options: [
+                    "Two",
+                    "Three",
+                    "Four",
+                    "Five"
+                ],
+                correctAnswer: "Four",
+                explanation: "The CXSD Framework comprises four distinct spaces: Align and Strategize, Discover and Define, Design and Test, and Scale and Sustain."
+            },
+            {
+                // Slide 13: Align and Strategize
+                question: "In the 'Align and Strategize' phase, what is the key activity related to customer journeys?",
+                options: [
+                    "Conducting usability tests on new products.",
+                    "Mapping an overview of touchpoints, frictions, and opportunities.",
+                    "Developing marketing campaigns.",
+                    "Managing project budgets."
+                ],
+                correctAnswer: "Mapping an overview of touchpoints, frictions, and opportunities.",
+                explanation: "The 'Align and Strategize' phase involves proactively mapping an overview of touchpoints, frictions, and opportunities for specific user groups on the customer journey map."
+            },
+            {
+                // Slide 17: Discover - DIA CX Place
+                question: "What is the primary purpose of 'DIA CX Place'?",
+                options: [
+                    "A tool for booking business travel.",
+                    "A platform for learning how to master CX.",
+                    "A directory of Roche employees.",
+                    "A system for managing laboratory equipment."
+                ],
+                correctAnswer: "A platform for learning how to master CX.",
+                explanation: "The 'DIA CX Place' is where you can learn how to master CX and transform insights into exceptional customer experiences."
+            },
+            {
+                // Slide 17: Discover - One Recruiting
+                question: "What service does 'One Recruiting' offer within CXSD?",
+                options: [
+                    "Hiring new CXSD team members.",
+                    "Guiding designers in accessing Roche customers for research.",
+                    "Managing external vendor contracts.",
+                    "Providing internal career counseling."
+                ],
+                correctAnswer: "Guiding designers in accessing Roche customers for research.",
+                explanation: "'One Recruiting' is a CXSD service that guides and supports designers in setting up coordinated access to Roche customers and participants for design and development purposes."
+            },
+            {
+                // Slide 21: RDS Customer Requirements Playbook
+                question: "The 'RDS Customer Requirements Playbook' aims to optimize which process?",
+                options: [
+                    "Employee performance reviews.",
+                    "Product launch strategies.",
+                    "Unbiased collection and prioritization of customer requirements.",
+                    "Supply chain management."
+                ],
+                correctAnswer: "Unbiased collection and prioritization of customer requirements.",
+                explanation: "This initiative aims to provide clear and actionable recommendations to enhance and optimize the unbiased collection and prioritization of customer requirements."
+            },
+            {
+                // Slide 22: Digital Design
+                question: "What is the goal of 'One Design System Unified & user interface icons' in Digital Design?",
+                options: [
+                    "To manage internal communications.",
+                    "To ensure consistency and excellence in UX standards.",
+                    "To track customer feedback.",
+                    "To automate software development."
+                ],
+                correctAnswer: "To ensure consistency and excellence in UX standards.",
+                explanation: "This system is part of upholding and advocating a robust set of UX standards and best practices to ensure consistency and excellence."
+            },
+            {
+                // Slide 23: Physical Design - Sustainable Design
+                question: "Which of these is a key focus area under 'Physical Design'?",
+                options: [
+                    "Digital Marketing Campaigns",
+                    "Sustainable Design",
+                    "Financial Reporting",
+                    "Supply Chain Optimization"
+                ],
+                correctAnswer: "Sustainable Design",
+                explanation: "'Sustainable Design' is a prominent section within Physical Design, focusing on environmental best practices."
+            },
+            {
+                // Slide 27: CXSD Operating Model
+                question: "How is the CXSD organization primarily structured to design a seamless customer experience?",
+                options: [
+                    "Hierarchical",
+                    "Functional",
+                    "Matrix",
+                    "Centralized"
+                ],
+                correctAnswer: "Matrix",
+                explanation: "The CXSD Operating Model states: 'To design a seamless customer experience we operate as a matrix organization.'"
+            },
+            {
+                // Slide 27: CXSD Operating Model - Squads
+                question: "In the CXSD Operating Model, projects are clustered into what, reflecting Roche customer areas?",
+                options: [
+                    "Departments",
+                    "Committees",
+                    "Squads",
+                    "Divisions"
+                ],
+                correctAnswer: "Squads",
+                explanation: "The deck explains: 'Our projects are clustered in Squads that reflect Roche customer areas, our people aggregate around them to supply each project with their diverse skill sets and approaches.'"
+            },
+            {
+                // Slide 31: Sub-Chapter Leads
+                question: "Who is the Sub-Chapter Lead for 'Physical and Sustainable Design'?",
+                options: [
+                    "Matthias Leuthold",
+                    "Alessia Rullo",
+                    "Hermann Hofstetter",
+                    "Pier Cancellara"
+                ],
+                correctAnswer: "Hermann Hofstetter",
+                explanation: "Hermann Hofstetter is listed as the Sub-Chapter Lead for Physical and Sustainable Design."
+            },
+            {
+                // Slide 32: Sub-Chapter Leads
+                question: "Which Sub-Chapter is led by Pier Cancellara?",
+                options: [
+                    "Design Management & Operations",
+                    "CX. Research & Strategy",
+                    "Digital Design & User Testing Services",
+                    "Solution Management"
+                ],
+                correctAnswer: "Digital Design & User Testing Services",
+                explanation: "Pier Cancellara is the Sub-Chapter Lead for Digital Design & User Testing Services."
+            },
+            {
+                // Slide 34: Squad Design Leads
+                question: "Who is the Design Lead for the 'Molecular Lab' Squad?",
+                options: [
+                    "Tom Allnutt",
+                    "Thomas Blumer",
+                    "Magdalena Fidos",
+                    "Takeo Yoshida"
+                ],
+                correctAnswer: "Thomas Blumer",
+                explanation: "Thomas Blumer is identified as the Design Lead for the Molecular Lab Squad."
+            },
+            {
+                // Slide 45: Roche Sites represented by CXSD
+                question: "Which of the following Roche sites is NOT explicitly mentioned as being represented by CXSD?",
+                options: [
+                    "RDI (Rotkreuz)",
+                    "Roche Basel",
+                    "Roche Geneva",
+                    "Roche Sant Cugat"
+                ],
+                correctAnswer: "Roche Geneva",
+                explanation: "The slide lists RDI (Rotkreuz), Roche Basel, Roche Sant Cugat, and Roche Tucson as sites where CXSD is represented. Roche Geneva is not mentioned."
+            },
+            {
+                // Slide 47: Admin Support
+                question: "If a new joiner at the RDI site (Rotkreuz) has administrative questions regarding training management, which email address should they use?",
+                options: [
+                    "basel@roche.com",
+                    "rotkreuz.business-services-rds@roche.com",
+                    "sancugat.ris_admin@roche.com",
+                    "lu-ann.pagano@roche.com"
+                ],
+                correctAnswer: "rotkreuz.business-services-rds@roche.com",
+                explanation: "The RDI site (Rotkreuz) uses 'rotkreuz.business-services-rds@roche.com' for administrative questions."
+            },
+            {
+                // Slide 48: Time Management Switzerland
+                question: "According to Swiss law, what is the compulsory break duration when working more than 7 hours?",
+                options: [
+                    "15 minutes",
+                    "20 minutes",
+                    "30 minutes",
+                    "60 minutes"
+                ],
+                correctAnswer: "30 minutes",
+                explanation: "The slide states: 'By Swiss law, it is compulsory to have at least 30 min breaks when working more than 7 hours; if you don’t have this break during the day it will be automatically deducted from your hours.'"
+            },
+            {
+                // Slide 50: Digital IT Onboarding Tool (DITO)
+                question: "What is the primary benefit of the 'Digital IT Onboarding Tool (DITO)'?",
+                options: [
+                    "It helps manage project schedules.",
+                    "It provides a self-study solution for Roche Digital Workspace and IT tools.",
+                    "It facilitates team building activities.",
+                    "It tracks employee attendance."
+                ],
+                correctAnswer: "It provides a self-study solution for Roche Digital Workspace and IT tools.",
+                explanation: "DITO is described as a 'self-study solution [that] will help you to get settled into your Roche Digital Workspace and will introduces you to the most important Roche generic Collaboration Tools & Applications with focus on IT, along with tips and tricks to help maximize your daily efficiency.'"
+            },
+            {
+                // Slide 50: Tools - Monday.com
+                question: "What is the required action to gain access to the CXSD Workspace on Monday.com?",
+                options: [
+                    "Send an email to IT support.",
+                    "Login with SSO and request access.",
+                    "Contact the Line Manager directly.",
+                    "Attend a mandatory training session."
+                ],
+                correctAnswer: "Login with SSO and request access.",
+                explanation: "The instructions state: 'Please log to https://globalroche.monday.com/ , login with SSO, and request access to CXSD Workspace.'"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedOption = null;
+        let answeredCorrectly = false; // Flag to track if the current question was answered correctly
+        const passScore = 80; // 80% of 100 points (20 questions * 5 points/question)
+
+        const startScreen = document.getElementById('start-screen');
+        const questionScreen = document.getElementById('question-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startButton = document.getElementById('start-button');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const nextButton = document.getElementById('next-button');
+        const progressBar = document.getElementById('progress-bar');
+        const levelIndicator = document.getElementById('level-indicator');
+        const scoreDisplay = document.getElementById('score-display');
+        const resultHeading = document.getElementById('result-heading');
+        const finalScoreText = document.getElementById('final-score-text');
+        const passFailMessage = document.getElementById('pass-fail-message');
+        const restartButton = document.getElementById('restart-button');
+        const explanationModalOverlay = document.getElementById('explanation-modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalExplanation = document.getElementById('modal-explanation');
+
+        // Event Listeners
+        startButton.addEventListener('click', startGame);
+        nextButton.addEventListener('click', handleNextQuestion);
+        restartButton.addEventListener('click', restartGame);
+
+        function startGame() {
+            startScreen.classList.add('fade-out');
+            setTimeout(() => {
+                startScreen.classList.add('hidden');
+                startScreen.classList.remove('fade-out');
+                questionScreen.classList.remove('hidden');
+                questionScreen.classList.add('fade-in');
+                currentQuestionIndex = 0;
+                score = 0;
+                updateScoreDisplay();
+                loadQuestion();
+                updateProgressBar();
+            }, 500); // Wait for fade-out to complete
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const q = questions[currentQuestionIndex];
+                questionText.textContent = q.question;
+                optionsContainer.innerHTML = ''; // Clear previous options
+                selectedOption = null;
+                nextButton.classList.add('hidden');
+                answeredCorrectly = false; // Reset flag for new question
+
+                q.options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.classList.add('option-button');
+                    button.addEventListener('click', () => selectOption(button, option, q.correctAnswer, q.explanation));
+                    optionsContainer.appendChild(button);
+                });
+                updateLevelIndicator();
+            } else {
+                showResultScreen();
+            }
+        }
+
+        function selectOption(button, selectedText, correctAnswer, explanation) {
+            // Only allow selection if an option hasn't been chosen yet for this question
+            if (selectedOption === null) {
+                selectedOption = button;
+                // Add 'selected' class to the chosen option
+                button.classList.add('selected');
+
+                // Disable all options after a selection is made
+                Array.from(optionsContainer.children).forEach(opt => opt.disabled = true);
+
+                if (selectedText === correctAnswer) {
+                    button.classList.add('correct');
+                    score += 5; // Each question is worth 5 points
+                    answeredCorrectly = true;
+                    updateScoreDisplay();
+                    nextButton.classList.remove('hidden');
+                } else {
+                    button.classList.add('incorrect');
+                    answeredCorrectly = false;
+                    showExplanation(correctAnswer, explanation);
+                }
+            }
+        }
+
+        function handleNextQuestion() {
+            currentQuestionIndex++;
+            updateProgressBar();
+            // If the last question was answered incorrectly, we don't immediately show the next button,
+            // the user has to close the modal first. The modal close event will then call loadQuestion.
+            if (answeredCorrectly || explanationModalOverlay.classList.contains('hidden')) { // Ensure modal is closed
+                 // Apply fade-out to current question screen before loading next
+                questionScreen.classList.remove('fade-in');
+                questionScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    questionScreen.classList.remove('fade-out');
+                    questionScreen.classList.add('fade-in');
+                    loadQuestion();
+                    // Re-enable all options for the new question
+                    Array.from(optionsContainer.children).forEach(opt => opt.disabled = false);
+                }, 300); // Match fade-out duration
+            }
+        }
+
+        function updateProgressBar() {
+            const progress = (currentQuestionIndex / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            // Change progress bar color based on score if needed, or just keep green for progress
+            // For now, it just shows progress.
+        }
+
+        function updateLevelIndicator() {
+            // Levels are tied to question index ranges, adjust as needed
+            let level = 1;
+            if (currentQuestionIndex >= 4 && currentQuestionIndex < 10) {
+                level = 2;
+            } else if (currentQuestionIndex >= 10 && currentQuestionIndex < 15) {
+                level = 3;
+            } else if (currentQuestionIndex >= 15) {
+                level = 4;
+            }
+            levelIndicator.textContent = `Level ${level}`;
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score}/${questions.length * 5}`;
+        }
+
+        function showExplanation(correctAnswer, explanation) {
+            modalTitle.textContent = "Incorrect Answer!";
+            modalTitle.classList.remove('text-green-600');
+            modalTitle.classList.add('text-red-600');
+            modalExplanation.innerHTML = `The correct answer was: <strong>${correctAnswer}</strong><br><br>${explanation}`;
+            explanationModalOverlay.classList.add('show');
+            // Hide the next button until the modal is closed
+            nextButton.classList.add('hidden');
+        }
+
+        function closeModal() {
+            explanationModalOverlay.classList.remove('show');
+            // After closing modal, check if we need to proceed to next question
+            // This is crucial for when an incorrect answer doesn't immediately show next button
+            if (!answeredCorrectly) { // If answered incorrectly, proceed to next question after modal close
+                 // Apply fade-out to current question screen before loading next
+                questionScreen.classList.remove('fade-in');
+                questionScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    questionScreen.classList.remove('fade-out');
+                    questionScreen.classList.add('fade-in');
+                    loadQuestion();
+                    // Re-enable all options for the new question
+                    Array.from(optionsContainer.children).forEach(opt => opt.disabled = false);
+                }, 300); // Match fade-out duration
+            } else {
+                 // If answered correctly, next button is already visible and user can click it
+                 nextButton.classList.remove('hidden');
+            }
+        }
+
+        function showResultScreen() {
+            questionScreen.classList.add('fade-out');
+            setTimeout(() => {
+                questionScreen.classList.add('hidden');
+                questionScreen.classList.remove('fade-out');
+                resultScreen.classList.remove('hidden');
+                resultScreen.classList.add('fade-in');
+
+                finalScoreText.textContent = `Your final score is: ${score} out of ${questions.length * 5} points.`;
+
+                if (score >= passScore) {
+                    resultHeading.textContent = "Congratulations, Navigator!";
+                    resultHeading.classList.remove('text-red-600');
+                    resultHeading.classList.add('text-green-600');
+                    passFailMessage.textContent = "You have successfully navigated the CXSD Knowledge Nexus and are officially ready to be a CXSD Team Member!";
+                    passFailMessage.classList.remove('text-red-700');
+                    passFailMessage.classList.add('text-green-700');
+                } else {
+                    resultHeading.textContent = "Mission Incomplete...";
+                    resultHeading.classList.remove('text-green-600');
+                    resultHeading.classList.add('text-red-600');
+                    passFailMessage.textContent = `You needed ${passScore} points to pass. Review the material and try again to join the CXSD Team!`;
+                    passFailMessage.classList.remove('text-green-700');
+                    passFailMessage.classList.add('text-red-700');
+                }
+            }, 500); // Wait for fade-out to complete
+        }
+
+        function restartGame() {
+            resultScreen.classList.add('fade-out');
+            setTimeout(() => {
+                resultScreen.classList.add('hidden');
+                resultScreen.classList.remove('fade-out');
+                startScreen.classList.remove('hidden');
+                startScreen.classList.add('fade-in');
+                currentQuestionIndex = 0;
+                score = 0;
+                updateScoreDisplay();
+                progressBar.style.width = '0%';
+                levelIndicator.textContent = 'Level 1';
+                Array.from(optionsContainer.children).forEach(opt => opt.disabled = false); // Re-enable for restart
+            }, 500); // Wait for fade-out to complete
+        }
+
+        // Initialize game on load
+        updateScoreDisplay();
+    </script>
+</body>
+</html>
